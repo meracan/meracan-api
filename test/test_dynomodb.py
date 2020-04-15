@@ -8,53 +8,53 @@ def test_cas():
   """ Testing DynamoDBTableCas
   """
   table={"TableName":"TestTableCas"}
-  items=listall({**table})
+  items=listall(**table)
   for item in items:
-    delete({**table,**item})
-  
-  create({**table,"name":"TestName1","projectId":"id1","keywords":{"a":"value","b":"value"}})
-  create({**table,"name":"TestName2","projectId":"id2"})
-  items=listall({**table})
+    delete(**{**item,**table})
+  create(name="TestName1",projectId="id1",keywords={"a":"value","b":"value"},**table)
+  create(name="TestName2",projectId="id2",**table)
+  items=listall(**table)
   assert len(items)==2
   
-  qitems=query({**table, "IndexName":'projectIndex',"KeyConditionExpression":Key('projectId').eq("id1")})
+  qitems=query(IndexName='projectIndex',KeyConditionExpression=Key('projectId').eq("id1"),**table)
   assert len(qitems)==1
   
   id=qitems[0]['id']
   assert qitems[0]['name']=="TestName1"
   
-  item=get({**table,"id":id})
+  item=get(id=id,**table)
   assert item['name']=="TestName1"
   
-  item=update({**table,"id":id,"name":"TestName1a","keywords":{"c":"value"}})
+  item=update(id=id,name="TestName1a",keywords={"c":"value"},**table)
   assert item['name']=="TestName1a"
   assert item['keywords']=={"a":"value","b":"value","c":"value"}
   
-  item=update({**table,"id":id,"keywords":{"c":None}})
-  print(item)
+  item=update(id=id,keywords={"c":None},**table)
+  
   assert item['keywords']=={"a":"value","b":"value"}
   
-  item=get({**table,"id":id})
+  item=get(id=id,**table)
   assert item['name']=="TestName1a"
   
   
-  qitems=query({**table, 
-  "IndexName":'projectIndex',
-  "KeyConditionExpression":Key('projectId').eq("id1"),
-  "FilterExpression":Attr('keywords.a').eq('value')
-  })
+  qitems=query( 
+  IndexName='projectIndex',
+  KeyConditionExpression=Key('projectId').eq("id1"),
+  FilterExpression=Attr('keywords.a').eq('value'),
+  **table
+  )
   assert len(qitems)==1
   
-  sitems=scan({**table, "FilterExpression":Attr('projectId').eq('id1')})
+  sitems=scan(FilterExpression=Attr('projectId').eq('id1'),**table)
   assert len(sitems)==1
   
-  sitems=scan({**table, "FilterExpression":Attr('keywords.b').eq('value')})
+  sitems=scan(FilterExpression=Attr('keywords.b').eq('value'),**table)
   assert len(sitems)==1
   
   for item in items:
-    delete({**table,**item})
+    delete(**{**table,**item})
   
-  item=listall({**table})
+  item=listall(**table)
   assert len(item)==0
 
 def test_temp():

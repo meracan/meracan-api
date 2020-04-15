@@ -1,0 +1,3 @@
+FORTRAN FILE = 'user_fortran'
+GEOMETRY FILE = 'geo.slf'
+LIQUID BOUNDARIES FILE = 'lqd.lqd'

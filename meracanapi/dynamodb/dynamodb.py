@@ -23,19 +23,16 @@ def check(function):
   """
   Decorator for static methods to check input
   """
-  def wrapper(kwargs):
-    kwargs={**kwargs}
-    kwargs['timestamp'] = int(time.time()*1000)
-    table = kwargs.pop('TableName')
-    kwargs['table'] = dynamodb.Table(table)
-    
-    return function(kwargs)
+  def wrapper(**kwargs):
+    TableName = kwargs.pop('TableName',os.environ.get('AWS_TABLENAME',None))
+    if TableName is None:raise Exception("TableName is not set")
+    table = dynamodb.Table(TableName)
+    return function(table,**kwargs)
   return wrapper
 
 @check
-def create(kwargs):
-    table=kwargs.pop("table")
-    timestamp=kwargs.pop("timestamp")
+def create(table,**kwargs):
+    timestamp = int(time.time()*1000)
     item = {
       **kwargs,
       'id': str(uuid.uuid4()),
@@ -46,30 +43,25 @@ def create(kwargs):
     return item
 
 @check
-def delete(kwargs):
-    table=kwargs.pop("table")
+def delete(table,**kwargs):
     id=kwargs.pop("id")
     table.delete_item(Key={'id': id})
     return True
 
 @check
-def get(kwargs):
-    table=kwargs.pop("table")
+def get(table,**kwargs):
     id=kwargs.pop("id")
     response = table.get_item(Key={'id': id})
     return response.get("Item",{})
     
 @check
-def listall(kwargs):
-    table=kwargs.pop("table")
+def listall(table,**kwargs):
     response = table.scan()
     return response.get("Items",[])
     
 @check
-def update(kwargs):
-    table=kwargs.pop("table")
+def update(table,**kwargs):
     id=kwargs.pop("id")
-    timestamp=kwargs.pop("timestamp")
     response=table.get_item(Key={'id': id})
     item=response.get("Item",{})
     
@@ -87,7 +79,7 @@ def update(kwargs):
       exp.append("#{0}=:{0}".format(key))
     exp=",".join(exp)
     
-    
+    timestamp = int(time.time()*1000)
     ExpressionAttributeValues={':updatedAt': timestamp,**new}
     
     response = table.update_item(
@@ -100,16 +92,12 @@ def update(kwargs):
     return response['Attributes']
 
 @check
-def query(kwargs):
-    table=kwargs.pop("table")
-    timestamp=kwargs.pop("timestamp")
+def query(table,**kwargs):
     response = table.query(**kwargs)
     return response.get("Items",[])
 
 @check
-def scan(kwargs):
-    table=kwargs.pop("table")
-    timestamp=kwargs.pop("timestamp")
+def scan(table,**kwargs):
     response = table.scan(**kwargs)
     return response.get("Items",[])
 
