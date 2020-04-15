@@ -10,29 +10,27 @@ def test_telemac():
   """
   access={"TableCas":"TestTableCas","TableData":"TestTableData"}
   
-  # f1=upload(Filename="meracan-api/test/data/user_fortran/a.f",TableName="TestTableData",BucketName="mercantest")
-  # f2=upload(Filename="meracan-api/test/data/user_fortran/b.f",TableName="TestTableData",BucketName="mercantest")
-  # geo=upload(Filename="meracan-api/test/data/geo.slf",TableName="TestTableData",BucketName="mercantest")
-  # lqd=upload(Filename="meracan-api/test/data/lqd.lqd",TableName="TestTableData",BucketName="mercantest")
+  f1=upload(Filename="meracan-api/test/data/user_fortran/a.f",TableName="TestTableData",BucketName="mercantest")
+  f2=upload(Filename="meracan-api/test/data/user_fortran/b.f",TableName="TestTableData",BucketName="mercantest")
+  geo=upload(Filename="meracan-api/test/data/geo.slf",TableName="TestTableData",BucketName="mercantest")
+  lqd=upload(Filename="meracan-api/test/data/lqd.lqd",TableName="TestTableData",BucketName="mercantest")
   
-  # keywords={
-  #   "GEOMETRY FILE":geo['id'],
-  #   "FORTRAN FILE":[f1['id'],f2['id']],
-  #   "LIQUID BOUNDARIES FILE":lqd['id'],
-  #   # "FLUXLINE INPUT FILE":"as",
-  # }
-  # item=create("general","cas1",keywords,**access)
-  # validate()
-  item=listall(**access)[0]
-  # validate(**item,**access)
+  keywords={
+    "GEOMETRY FILE":geo['id'],
+    "FORTRAN FILE":[f1['id'],f2['id']],
+    "LIQUID BOUNDARIES FILE":lqd['id']
+  }
+  item=create("general","cas1",keywords,**access)
+  
+  # item=listall(**access)[1]
+  validate(**item,**access)
   get(**item,**access,localFolder="meracan-api/test/data/model")
-  # print()
+  
   
 
   
 
 if __name__ == "__main__":
-  # test_cas()
   test_telemac()
 
   

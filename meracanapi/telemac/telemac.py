@@ -64,7 +64,9 @@ def _downloadFile(id,localFolder,TableData,key,value,isDownload):
   """ Get local file path and download file from S3
   """
   item=dynoget(id=id,TableName=TableData)
-  if item is None:logger.error("Keyword={0},Value={1} does not exist".format(key,value));return
+  if item is None:
+    logger.error("Keyword={0},Value={1} does not exist".format(key,value))
+    return None
   fileName = "{}.{}".format(item['name'],item['type'])
   filePath=os.path.join(localFolder,fileName)
   
@@ -129,6 +131,7 @@ def validate(id,
         #
         if "FILE" in key:
           strValue=_downloadFile(value,localFolder,TableData,key,value,isDownload)
+          if strValue is None:continue
 
     strCas+="{} = {}\n".format(key,strValue)
     

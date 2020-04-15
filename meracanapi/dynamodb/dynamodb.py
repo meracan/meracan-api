@@ -52,7 +52,7 @@ def delete(table,**kwargs):
 def get(table,**kwargs):
     id=kwargs.pop("id")
     response = table.get_item(Key={'id': id})
-    return response.get("Item",{})
+    return response.get("Item",None)
     
 @check
 def listall(table,**kwargs):
