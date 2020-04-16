@@ -89,6 +89,7 @@ def download(id,
   
   casPath ="{}.cas".format(item['name'])
   casPath = os.path.join(localFolder,casPath)
+  print(study.values)
   study.write(casPath)
   return logging  
 

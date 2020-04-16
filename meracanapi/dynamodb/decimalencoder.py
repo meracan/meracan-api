@@ -6,5 +6,7 @@ import json
 class DecimalEncoder(json.JSONEncoder):
   def default(self, obj):
     if isinstance(obj, decimal.Decimal):
-        return int(obj)
+      n=float(obj)
+      if n.is_integer():n=int(n)
+      return n
     return super(DecimalEncoder, self).default(obj)

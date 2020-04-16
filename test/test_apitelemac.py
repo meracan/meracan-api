@@ -1,8 +1,6 @@
 # import pytest
 import os
 
-
-from meracanapi.s3dynamodb import upload,download,delete
 from meracanapi.apitelemac import TelemacCas,create,delete,update,listall,query,scan,download,uploadFile
 
 def test_TelemacCas():
