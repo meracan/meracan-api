@@ -1,3 +1,0 @@
-GEOMETRY FILE = 'geo.slf'
-LIQUID BOUNDARIES FILE = 'lqd.lqd'
-FORTRAN FILE = 'user_fortran'

@@ -22,12 +22,12 @@ def delete(**kwargs):
   dynodelete(**kwargs)
   return response
 
-def upload(Filename,BucketName=os.environ.get('AWS_BUCKETNAME',None),projectId="general",**kwargs):
+def upload(Filename,BucketName=os.environ.get('AWS_BUCKETNAME',None),projectId="general",s3folder="data",**kwargs):
   s3 = boto3.resource('s3')
   if BucketName is None: raise Exception("Need BucketName")
   bucket = s3.Bucket(BucketName)
   
-  Key=str(uuid.uuid4())
+  Key=os.path.join(s3folder, str(uuid.uuid4()))
   bucket.upload_file(Filename=Filename,Key=Key)
   
   name = os.path.splitext(os.path.basename(Filename))[0]
