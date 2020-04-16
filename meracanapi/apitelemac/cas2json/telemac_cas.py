@@ -47,7 +47,7 @@ class TelemacCas(object):
         
         #TODO: Add identification of the module
         self.values = {}
-        self.lang = ''
+        self.lang = 'en'
         self.in_files = {}
         self.out_files = {}
         self.dico = TelemacDico(get_dico(module))
@@ -68,7 +68,7 @@ class TelemacCas(object):
     
     def _check(self):
         # Getting language info
-        self._identify_lang()
+        # self._identify_lang()
         # Checking that all the keyword are from the dictionary
         self._check_content()
         # Convert content according to its type
@@ -229,7 +229,7 @@ class TelemacCas(object):
 
         @return Value in its proper type (int/float/boolean/string)
         """
-
+        
 
         # Updating values dict
         # Converting value and translating key if necessary
@@ -258,7 +258,6 @@ class TelemacCas(object):
                 self.values[gb_keyword] = value
     
     def _getFilePath(self,value):
-      # print(value)
       value = value.strip("'")
       if not path.exists(value):
         value = path.join(path.dirname(self.file_name),value)

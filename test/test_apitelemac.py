@@ -20,32 +20,20 @@ def test_TelemacCas():
   study.setValues(keywords)
   study.write("meracan-api/test/data/test.cas")
 
-def test_apitelemac():
+def test_apitelemac_upload():
 #   """ Testing DynamoDBTableCas
 #   """
   access={"TableCas":"TestTableCas","TableData":"TestTableData","BucketName":"mercantest"}
   uploadFile('meracan-api/test/data/telemac2d/bump/t2d_bump_FE.cas',**access)
-  
-  # f1=upload(Filename="meracan-api/test/data/user_fortran/a.f",TableName="TestTableData",BucketName="mercantest")
-#   f2=upload(Filename="meracan-api/test/data/user_fortran/b.f",TableName="TestTableData",BucketName="mercantest")
-#   geo=upload(Filename="meracan-api/test/data/geo.slf",TableName="TestTableData",BucketName="mercantest")
-#   lqd=upload(Filename="meracan-api/test/data/lqd.lqd",TableName="TestTableData",BucketName="mercantest")
-  
-#   keywords={
-#     "GEOMETRY FILE":geo['id'],
-#     "FORTRAN FILE":[f1['id'],f2['id']],
-#     "LIQUID BOUNDARIES FILE":lqd['id']
-#   }
-#   item=create("general","cas1",keywords,**access)
-  
-#   # item=listall(**access)[1]
-#   validate(**item,**access)
-#   get(**item,**access,localFolder="meracan-api/test/data/model")
-  
+
+def test_apitelemac_download():
+  access={"TableCas":"TestTableCas","TableData":"TestTableData","BucketName":"mercantest"}
+  download("0221693c-8da3-4f93-8aa0-dd21b5b9828e",**access)
 
 if __name__ == "__main__":
   # test_TelemacCas()
-  test_apitelemac()
+  # test_apitelemac_upload()
+  test_apitelemac_download()
   
 
   

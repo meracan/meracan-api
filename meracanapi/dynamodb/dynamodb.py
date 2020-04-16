@@ -51,6 +51,7 @@ def delete(table,**kwargs):
 @check
 def get(table,**kwargs):
     id=kwargs.pop("id")
+    if not isinstance(id,str):raise Exception("id needs to be a string - {}".format(id))
     response = table.get_item(Key={'id': id})
     return response.get("Item",None)
     

@@ -13,6 +13,8 @@ from ..dynamodb import \
   listall as dynolist,\
   query as dynoquery,\
   scan as dynoscan
+
+from ..dynamodb.decimalencoder import DecimalEncoder
   
 from .cas2json.telemac_cas import TelemacCas
 from ..s3dynamodb import download as dynodownload,upload as dynoupload
@@ -55,7 +57,7 @@ def _downloadFile(id,localFolder,TableData,key,value):
   fileName = "{}.{}".format(item['name'],item['type'])
   filePath=os.path.join(localFolder,fileName)
   dynodownload(filePath,TableName=TableData,**item)
-  return "'{}'".format(fileName)
+  return "{}".format(fileName)
   
 
 def download(id,
@@ -68,14 +70,23 @@ def download(id,
   """
   if TableCas is None:raise Exception("Needs TableCas")
   if TableData is None:raise Exception("Needs TableData")
-
+  
   item=dynoget(id=id,TableName=TableCas)
   study=TelemacCas(item['module'])
-  study.setValues(item['keywords'])  
+  db_data = json.loads(json.dumps(item['keywords'],cls=DecimalEncoder))
+  study.setValues(db_data)  
   
   for key in study.in_files:
     value=study.values[key]
-    study.values[key]=_downloadFile(value,localFolder,TableData,key,value)
+    if isinstance(value,list):
+      # FORTRAN FILE
+      fortran_path=os.path.join(localFolder,"user_fortran")
+      if not os.path.exists(fortran_path):
+        os.mkdir(fortran_path)
+      study.values[key]=[_downloadFile(_value,fortran_path,TableData,key,_value) for _value in value]
+    else:  
+      study.values[key]=_downloadFile(value,localFolder,TableData,key,value)
+  
   casPath ="{}.cas".format(item['name'])
   casPath = os.path.join(localFolder,casPath)
   study.write(casPath)
