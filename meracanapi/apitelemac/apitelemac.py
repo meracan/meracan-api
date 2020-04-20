@@ -91,6 +91,7 @@ class ApiTelemac(ApiTelemacAWS):
           values = np.zeros(npoin)
           name=VARNAMES[var]
           if name=="FREESURFACE":
+            None
             
           
           values[index]=study.get_array("MODEL.{}".format(var))    

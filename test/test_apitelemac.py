@@ -7,10 +7,10 @@ access={"TableCas":"TestTableCas","TableData":"TestTableData","BucketName":"merc
 
 def test_ApiTelemac():
   
-  api=ApiTelemac(localFolder="meracan-api/test/output",**access)
+  api=ApiTelemac(localFolder="test/output",**access)
   
   # Upload/Donwload cas file and files
-  item=api.upload(Filename='meracan-api/test/data/telemac2d/confluence/t2d_confluence.cas')
+  item=api.upload(Filename='test/data/telemac2d/confluence/t2d_confluence.cas')
   cas,item=api.download(**item)
   
   #  Update keyword
@@ -18,11 +18,11 @@ def test_ApiTelemac():
   cas,item=api.download(**item)
   
   # Add liquid boundary file (example) and re-download
-  lqd=api.uploadFile(id=item['id'],keyword="LIQUID BOUNDARIES FILE",Filename='meracan-api/test/data/telemac2d/confluence/dummy.lqd')
+  lqd=api.uploadFile(id=item['id'],keyword="LIQUID BOUNDARIES FILE",Filename='test/data/telemac2d/confluence/dummy.lqd')
   cas,item=api.download(**item)
   
   # Add fortran file (example) and re-download
-  f=api.addFortran(id=item['id'],Filename='meracan-api/test/data/telemac2d/confluence/other.f')
+  f=api.addFortran(id=item['id'],Filename='test/data/telemac2d/confluence/other.f')
   cas,item=api.download(**item)
   
   # Remove fortran file (example) and re-download
@@ -30,10 +30,10 @@ def test_ApiTelemac():
   cas,item=api.download(**item)
   
 def test_ApiTelemac_Run():
-  api=ApiTelemac(localFolder="meracan-api/test/output",**access)
+  api=ApiTelemac(localFolder="test/output",**access)
   
   # Upload/Donwload cas file and files
-  item=api.upload(Filename='meracan-api/test/data/telemac2d/confluence/t2d_confluence.cas')
+  item=api.upload(Filename='test/data/telemac2d/confluence/t2d_confluence.cas')
   api.run(item['id'])
   
 if __name__ == "__main__":

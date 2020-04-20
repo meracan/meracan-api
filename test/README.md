@@ -13,9 +13,10 @@ conda activate meracan
 cd $CONDA_PREFIX
 vi ./etc/conda/activate.d/env_vars.sh
 # Copy below to file
+export AWS_BUCKETNAME="mercantest"
 export AWS_TABLECAS="TestTableCas"
 export AWS_TABLEDATA="TestTableData"
-export AWS_BUCKETNAME="mercantest"
+
 
 vi ./etc/conda/deactivate.d/env_vars.sh
 # Copy below to file
@@ -23,7 +24,7 @@ unset AWS_TABLECAS
 unset AWS_TABLEDATA
 unset AWS_BUCKETNAME
 
-conda deactivate meracan
+conda deactivate
 conda activate meracan
 
 ```
@@ -36,10 +37,10 @@ aws s3api create-bucket --bucket $AWS_BUCKETNAME --region us-east-1
 ```bash 
 aws dynamodb create-table \
     --table-name $AWS_TABLECAS \
-    --billing-mode PAY_PER_REQUEST \
-    --attribute-definitions AttributeName=id,AttributeType=S,AttributeName=projectId,AttributeType=S \
-    --key-schema AttributeName=id,KeyType=HASH \
-    --global-secondary-indexes IndexName=projectIndex,KeySchema=[{AttributeName=projectId,KeyType=HASH},Projection={ProjectionType=ALL}]
+    --billing-mode "PAY_PER_REQUEST" \
+    --attribute-definitions AttributeName="id",AttributeType="S" AttributeName="projectId",AttributeType="S" \
+    --key-schema AttributeName="id",KeyType="HASH" \
+    --global-secondary-indexes IndexName=projectIndex,KeySchema=["{AttributeName=projectId,KeyType=HASH}"],Projection="{ProjectionType=ALL}"
 ```
 
 #### Create TableData
@@ -47,12 +48,10 @@ aws dynamodb create-table \
 aws dynamodb create-table \
     --table-name $AWS_TABLEDATA \
     --billing-mode PAY_PER_REQUEST \
-    --attribute-definitions AttributeName=id,AttributeType=S,AttributeName=projectId,AttributeType=S,AttributeName=type,AttributeType=S \
+    --attribute-definitions AttributeName=id,AttributeType=S AttributeName=projectId,AttributeType=S AttributeName="type",AttributeType=S \
     --key-schema AttributeName=id,KeyType=HASH \
-    --global-secondary-indexes IndexName=projectIndex,KeySchema=[{AttributeName=projectId,KeyType=HASH},Projection={ProjectionType=ALL}] \
-    --global-secondary-indexes IndexName=typeIndex,KeySchema=[{AttributeName=type,KeyType=HASH},Projection={ProjectionType=ALL}]
+    --global-secondary-indexes IndexName=projectIndex,KeySchema=["{AttributeName=projectId,KeyType=HASH}"],Projection="{ProjectionType=ALL}" IndexName=typeIndex,KeySchema=["{AttributeName=type,KeyType=HASH}"],Projection="{ProjectionType=ALL}"
 ```
-
 
 ## Pytest
 Testing is done using pytest.
