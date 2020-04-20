@@ -1,1 +1,1 @@
-from .s3dynamodb import *
+from .s3dynamodb import S3DynamoDB

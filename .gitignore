@@ -131,3 +131,4 @@ dmypy.json
 .shp
 .zip
 .~c9*
+output/

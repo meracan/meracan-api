@@ -1,2 +1,1 @@
-from .apitelemac import *
-from .cas2json.telemac_cas import TelemacCas
+from .apitelemac import ApiTelemac

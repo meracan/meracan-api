@@ -1,134 +1,111 @@
-import json
-import logging
 import os
-from decimal import Decimal
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+from telapy.api.t2d import Telemac2d
+from telapy.api.t3d import Telemac3d
+from telapy.api.wac import Tomawac
+from telapy.api.sis import Sisyphe
+from mpi4py import MPI
+import numpy as np
 
-from ..dynamodb import \
-  create as dynocreate,\
-  delete as dynodelete,\
-  update as dynoupdate,\
-  get as dynoget,\
-  listall as dynolist,\
-  query as dynoquery,\
-  scan as dynoscan
+from .apitelemacaws import ApiTelemacAWS
 
-from ..dynamodb.decimalencoder import DecimalEncoder
+modules = {
+  "telemac2d":Telemac2d,
+  "telemac3d":Telemac3d,
+  "tomawac":Tomawac,
+  "sisyphe":Sisyphe
+}
+VARNAMES={
+  "U":"VELOCITYU",
+  "V":"VELOCITYV",
+  "H":"WATERDEPTH",
+  "S":"FREESURFACE",
+  "B":"BOTTOMELEVATION",
+}
+
+
+class ApiTelemac(ApiTelemacAWS):
+  def __ini__(self,**kwargs):
+    super().__init__(**kwargs)
   
-from .cas2json.telemac_cas import TelemacCas
-from ..s3dynamodb import download as dynodownload,upload as dynoupload
-
-
-def create(projectId,name,keywords,module="telemac2d",TableCas=os.environ.get('AWS_TABLECAS',None),**kwargs):
-  if TableCas is None:raise Exception("Needs TableCas")
-  return dynocreate(projectId=projectId,name=name,keywords=keywords,module=module,TableName=TableCas)
-
-def pre(function):
-  """ Decorator for ...
-  """
-  def wrapper(**kwargs):
-    kwargs['TableName'] = kwargs.pop('TableCas',os.environ.get('AWS_TABLECAS'))
-    return function(**kwargs)
-  return wrapper
-@pre
-def delete(**kwargs):
-  return dynodelete(**kwargs)    
-@pre
-def update(**kwargs):
-  return dynoupdate(**kwargs)
-@pre
-def listall(**kwargs):
-  return dynolist(**kwargs)
-@pre
-def query(**kwargs):
-  return dynoquery(**kwargs)
-@pre
-def scan(**kwargs):
-  return dynoscan(**kwargs)
-
-def _downloadFile(id,localFolder,TableData,key,value):
-  """ Get local file path and download file from S3
-  """
-  item=dynoget(id=id,TableName=TableData)
-  if item is None:
-    logger.error("Keyword={0},Value={1} does not exist".format(key,value))
-    return None
-  fileName = "{}.{}".format(item['name'],item['type'])
-  filePath=os.path.join(localFolder,fileName)
-  dynodownload(filePath,TableName=TableData,**item)
-  return "{}".format(fileName)
-  
-
-def download(id,
-  localFolder=os.environ.get('TELEMAC_LOCALFOLDER',""),
-  TableCas=os.environ.get('AWS_TABLECAS',None),
-  TableData=os.environ.get('AWS_TABLEDATA',None),
-  **kwargs
-  ):
-  """ Download cas and files
-  """
-  if TableCas is None:raise Exception("Needs TableCas")
-  if TableData is None:raise Exception("Needs TableData")
-  
-  item=dynoget(id=id,TableName=TableCas)
-  study=TelemacCas(item['module'])
-  db_data = json.loads(json.dumps(item['keywords'],cls=DecimalEncoder))
-  study.setValues(db_data)  
-  
-  for key in study.in_files:
-    value=study.values[key]
-    if isinstance(value,list):
-      # FORTRAN FILE
-      fortran_path=os.path.join(localFolder,"user_fortran")
-      if not os.path.exists(fortran_path):
-        os.mkdir(fortran_path)
-      study.values[key]=[_downloadFile(_value,fortran_path,TableData,key,_value) for _value in value]
-    else:  
-      study.values[key]=_downloadFile(value,localFolder,TableData,key,value)
-  
-  casPath ="{}.cas".format(item['name'])
-  casPath = os.path.join(localFolder,casPath)
-  print(study.values)
-  study.write(casPath)
-  return logging  
-
-def uploadFile(casFile,
-  projectId="general",
-  name=None,
-  module="telemac2d",
-  localFolder=os.environ.get('TELEMAC_LOCALFOLDER',""),
-  TableCas=os.environ.get('AWS_TABLECAS',None),
-  TableData=os.environ.get('AWS_TABLEDATA',None),
-  BucketName=os.environ.get('AWS_BUCKETNAME',None),
-  **kwargs
-  ):
-  """ Upload cas and files
-  """
-  if TableCas is None:raise Exception("Needs TableCas")
-  if TableData is None:raise Exception("Needs TableData")
-  if BucketName is None:raise Exception("Needs BucketName")
-
-  study=TelemacCas(module,casFile)
-  
-  if name is None:
-    name=os.path.splitext(os.path.basename(casFile))[0]
+  def run(self,id,uploadNCA=False):
+    """
+    Run telemac using cas and files from DynamoDB and S3.
     
-  def _upload(file):
-    f=dynoupload(Filename=file,TableName=TableData,BucketName=BucketName)
-    return f['id']
-  
-  for key in study.in_files:
-    if key=="FORTRAN FILE":
-      files=study.values[key]
-      study.values[key]=[_upload(file) for file in files]
+    
+    Parameters
+    ----------
+    id:str
+      DynamoDB Id
+    uploadNCA:bool,False
+      Upload results on the fly as NCA to S3
+    """
+    casFile,item=self.download(id=id)
+    
+    
+    os.chdir(os.path.dirname(casFile))
+    basename=os.path.basename(casFile)
+    comm = MPI.COMM_WORLD
+    
+    study=modules[item['module']](basename, user_fortran='user_fortran',comm=comm, stdout=0)
+    study.set_case()
+    study.init_state_default()
+    
+    ntimesteps = study.get("MODEL.NTIMESTEPS")
+    
+    ilprintout = study.cas.values.get("LISTING PRINTOUT PERIOD",study.cas.dico.data["LISTING PRINTOUT PERIOD"])
+    igprintout = study.cas.values.get("GRAPHIC PRINTOUT PERIOD",study.cas.dico.data["GRAPHIC PRINTOUT PERIOD"])
+    vars = study.cas.values.get("VARIABLES FOR GRAPHIC PRINTOUTS",study.cas.dico.data["VARIABLES FOR GRAPHIC PRINTOUTS"])
+    print(vars)
+    # nvariables = study.get("MODEL.nvariables")
+    def getFrame(istep):
+      return int(np.floor(float(istep)/igprintout))
+    nframestep= getFrame(ntimesteps)
+    
+    if study.ncsize>1:
+      """ Get npoin and index
+      """
+      data = np.zeros(study.ncsize,dtype=np.int)
+      data[comm.rank]=np.max(study.get_array("MODEL.KNOLG"))
+      npoin=np.max(comm.allreduce(data, MPI.SUM))
+      index=study.get_array("MODEL.KNOLG").astype(np.int)-1
     else:
-      file=study.values[key]
-      study.values[key]=_upload(file)
-
-  ddb_data = json.loads(json.dumps(study.values), parse_float=Decimal)
-  create(projectId,name,ddb_data,TableCas=TableCas,TableData=TableData)
-  
-  # TODO: if error, delete all
-  
-  return logging
+      npoin=study.get("MODEL.NPOIN")
+      index= np.arange(npoin,dtype=np.int)
+    
+    for _ in range(ntimesteps):
+      study.run_one_time_step()
+      if _%ilprintout==0 and comm.rank==0:
+        """ Print to console
+        """
+        print(_)
+        
+      if _%igprintout==0 and comm.rank==0:
+        """ Print to AWS
+        """
+        self.updateProgress(id=id,iframe=getFrame(_),nframe=nframestep)
+      
+      if _%igprintout==0 and uploadNCA:
+        """ Save frame to AWS
+        """
+        for var in vars:
+          values = np.zeros(npoin)
+          name=VARNAMES[var]
+          if name=="FREESURFACE":
+            
+          
+          values[index]=study.get_array("MODEL.{}".format(var))    
+          values=comm.allreduce(values, MPI.SUM)
+          if comm.rank==0:
+            None
+            # nca["h","s",getFrame(_)]=values
+          
+        
+    if comm.rank==0:
+      self.updateProgress(id=id,iframe=nframestep,nframe=nframestep)
+    
+    # TODO check nframe, save last frame?????
+    
+    study.finalize()
+    del study
+    return None
+ApiTelemac.__doc__=ApiTelemacAWS.__doc__
