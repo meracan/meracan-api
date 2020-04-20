@@ -92,11 +92,11 @@ class ApiTelemacAWS(object):
     item=self.cas.update(id=id,iframe=iframe,nframe=nframe)
     return item
   
-  def _uploadFiles(self,study,casId):
+  def _uploadFiles(self,study):
     """ Process to upload files(from cas) to S3
     """
     def fupload(file):
-      f=self.data.upload(file,projectId=self.projectId,casId=casId)
+      f=self.data.upload(file,projectId=self.projectId)
       return f['id']
     
     for key in study.in_files:
@@ -146,7 +146,7 @@ class ApiTelemacAWS(object):
     """
     if keyword is None:raise Exception("Needs keyword")
     casId=kwargs.pop('id')
-    f=self.data.upload(projectId=self.projectId,casId=casId,**kwargs)
+    f=self.data.upload(projectId=self.projectId,**kwargs)
     item=self.update(id=casId,keywords={keyword:f['id']})
     return f
   uploadFile.__doc__=S3DynamoDB.upload.__doc__
@@ -228,7 +228,7 @@ class ApiTelemacAWS(object):
     item=self.cas.get(id=kwargs['id'])
     if not item:raise Exception("Item does not exist")
     casId=kwargs.pop('id')
-    f=self.data.upload(projectId=self.projectId,casId=casId,**kwargs)
+    f=self.data.upload(projectId=self.projectId,**kwargs)
     farray=item['keywords'].get("FORTRAN FILE",[])
     farray.append(f['id'])
     item=self.update(id=casId,keywords={"FORTRAN FILE":farray})
